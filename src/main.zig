@@ -1,5 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+const pow =  std.math.pow;
 
 const vector_3d = [3]f32;
 
@@ -25,9 +26,15 @@ pub fn point_at_parameter(r: Ray, t: f32) vector_3d {
 
 
 pub fn color(r: Ray) [3]f32 {
-    const unit_direction = r.direction / @sqrt(r.direction[0]**2 + r.direction[1]**2 + r.direction[2]**2);
+    const norm = @sqrt(pow(f32, r.direction[0], 2) + pow(f32, r.direction[1], 2) + pow(f32, r.direction[2], 2));
+    const unit_direction: vector_3d = .{
+        r.direction[0] / norm,
+        r.direction[1] / norm,
+        r.direction[2] / norm};
     const t = 0.5 * (unit_direction[1] + 1.0);
-    return (1.0 - t) * .{1.0, 1.0, 1.0} + t * .{0.5, 0.7, 1.0};
+    return vec_sum(
+        mult_num_vector(f32, (1.0 - t), .{1.0, 1.0, 1.0}),
+        mult_num_vector(f32, t, .{0.5, 0.7, 1.0}));
 }
 
 
