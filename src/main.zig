@@ -15,6 +15,15 @@ pub fn vec_sum(a: vector_3d, b: vector_3d) vector_3d {
 }
 
 
+pub fn vec_sub(a: vector_3d, b: vector_3d) vector_3d {
+    return .{a[0] - b[0], a[1] - b[1], a[2] - b[2]};
+}
+
+pub fn vec_dot(a: vector_3d, b: vector_3d) f32 {
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+
 pub fn mult_num_vector(comptime T: type, a: T , b: vector_3d) vector_3d {
     return .{a * b[0], a * b[1], a * b[2]};
 }
@@ -25,7 +34,34 @@ pub fn point_at_parameter(r: Ray, t: f32) vector_3d {
 }
 
 
+// color for Blue gradient
+pub fn color_blue(r: Ray) [3]f32 {
+    const norm = @sqrt(pow(f32, r.direction[0], 2) + pow(f32, r.direction[1], 2) + pow(f32, r.direction[2], 2));
+    const unit_direction: vector_3d = .{
+        r.direction[0] / norm,
+        r.direction[1] / norm,
+        r.direction[2] / norm};
+    const t = 0.5 * (unit_direction[1] + 1.0);
+    return vec_sum(
+        mult_num_vector(f32, (1.0 - t), .{1.0, 1.0, 1.0}),
+        mult_num_vector(f32, t, .{0.5, 0.7, 1.0}));
+}
+
+
+pub fn hit_sphere(center: vector_3d, radius: f32, r: Ray) bool {
+    const oc = vec_sub(r.origin, center);
+    const a = vec_dot(r.direction, r.direction);
+    const b = 2.0 * vec_dot(oc, r.direction);
+    const c = vec_dot(oc, oc) - radius * radius;
+    const discriminant = b * b - 4.0 * a * c;
+    return discriminant > 0.0;
+}
+
+// color for sphere
 pub fn color(r: Ray) [3]f32 {
+    if (hit_sphere(.{0.0, 0.0, -1.0}, 0.5, r)) {
+        return .{1.0, 0.0, 0.0};
+    }
     const norm = @sqrt(pow(f32, r.direction[0], 2) + pow(f32, r.direction[1], 2) + pow(f32, r.direction[2], 2));
     const unit_direction: vector_3d = .{
         r.direction[0] / norm,
