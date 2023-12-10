@@ -1,76 +1,81 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const pow =  std.math.pow;
-
-const vector_3d = [3]f32;
-
-const Ray = struct {
-    origin: vector_3d,
-    direction: vector_3d,
-};
+const pow = std.math.pow;
 
 
-pub fn vec_sum(a: vector_3d, b: vector_3d) vector_3d {
+pub fn Vector3D(comptime T: type) type {
+    return [3]T;
+}
+
+pub fn Ray(comptime T: type) type {
+    return struct {
+         origin: Vector3D(T),
+         direction: Vector3D(T)
+    };
+}
+
+
+pub fn vec_sum(comptime T: type, a: Vector3D(T), b: Vector3D(T)) Vector3D(T) {
     return .{a[0] + b[0], a[1] + b[1], a[2] + b[2]};
 }
 
 
-pub fn vec_sub(a: vector_3d, b: vector_3d) vector_3d {
+pub fn vec_sub(comptime T: type, a: Vector3D(T), b: Vector3D(T)) Vector3D(T) {
     return .{a[0] - b[0], a[1] - b[1], a[2] - b[2]};
 }
 
-pub fn vec_dot(a: vector_3d, b: vector_3d) f32 {
+pub fn vec_dot(comptime T: type, a: Vector3D(T), b: Vector3D(T)) T {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
 
-pub fn mult_num_vector(comptime T: type, a: T , b: vector_3d) vector_3d {
+pub fn mult_num_vector(comptime T: type, comptime V: type, a: T , b: Vector3D(V)) Vector3D(V) {
     return .{a * b[0], a * b[1], a * b[2]};
 }
 
 
-pub fn point_at_parameter(r: Ray, t: f32) vector_3d {
+pub fn point_at_parameter(comptime T: type, r: Ray(T), t: T) Vector3D(T) {
     return r.origin + t * r.direction;
 }
 
 
 // color for Blue gradient
-pub fn color_blue(r: Ray) [3]f32 {
-    const norm = @sqrt(pow(f32, r.direction[0], 2) + pow(f32, r.direction[1], 2) + pow(f32, r.direction[2], 2));
-    const unit_direction: vector_3d = .{
+pub fn color_blue(comptime T: type, r: Ray(T)) Vector3D(T) {
+    const norm = @sqrt(pow(T, r.direction[0], 2) + pow(T, r.direction[1], 2) + pow(T, r.direction[2], 2));
+    const unit_direction: Vector3D = .{
         r.direction[0] / norm,
         r.direction[1] / norm,
         r.direction[2] / norm};
     const t = 0.5 * (unit_direction[1] + 1.0);
-    return vec_sum(
-        mult_num_vector(f32, (1.0 - t), .{1.0, 1.0, 1.0}),
-        mult_num_vector(f32, t, .{0.5, 0.7, 1.0}));
+    return vec_sum(T,
+        mult_num_vector(f32, T, (1.0 - t), .{1.0, 1.0, 1.0}),
+        mult_num_vector(f32, T, t, .{0.5, 0.7, 1.0}));
 }
 
 
-pub fn hit_sphere(center: vector_3d, radius: f32, r: Ray) bool {
-    const oc = vec_sub(r.origin, center);
-    const a = vec_dot(r.direction, r.direction);
-    const b = 2.0 * vec_dot(oc, r.direction);
-    const c = vec_dot(oc, oc) - radius * radius;
+pub fn hit_sphere(comptime T: type, center: Vector3D(T), radius: f32, r: Ray(T)) bool {
+    const oc = vec_sub(T, r.origin, center);
+    const a = vec_dot(T, r.direction, r.direction);
+    const b = 2.0 * vec_dot(T, oc, r.direction);
+    const c = vec_dot(T, oc, oc) - radius * radius;
     const discriminant = b * b - 4.0 * a * c;
     return discriminant > 0.0;
 }
 
 // color for sphere
-pub fn color(r: Ray) [3]f32 {
-    if (hit_sphere(.{0.0, 0.0, -1.0}, 0.5, r)) {
+pub fn color(comptime T: type, r: Ray(T)) Vector3D(T) {
+    if (hit_sphere(T, .{0.0, 0.0, -1.0}, 0.5, r)) {
         return .{1.0, 0.0, 0.0};
     }
     const norm = @sqrt(pow(f32, r.direction[0], 2) + pow(f32, r.direction[1], 2) + pow(f32, r.direction[2], 2));
-    const unit_direction: vector_3d = .{
+    const unit_direction: Vector3D(T) = .{
         r.direction[0] / norm,
         r.direction[1] / norm,
         r.direction[2] / norm};
     const t = 0.5 * (unit_direction[1] + 1.0);
-    return vec_sum(
-        mult_num_vector(f32, (1.0 - t), .{1.0, 1.0, 1.0}),
-        mult_num_vector(f32, t, .{0.5, 0.7, 1.0}));
+    return vec_sum(T,
+        mult_num_vector(f32, T, (1.0 - t), .{1.0, 1.0, 1.0}),
+        mult_num_vector(f32, T, t, .{0.5, 0.7, 1.0}));
 }
 
 
@@ -127,13 +132,13 @@ pub fn generate_blue_gradient(allocator: Allocator, width: u16, height: u16) ![]
         for (0..width) |i| {
             const u: f32 = @as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(width));
             const v: f32 = @as(f32, @floatFromInt(j)) / @as(f32, @floatFromInt(height));
-            const r = Ray {
+            const r = Ray(f32) {
                 .origin = .{0.0, 0.0, 0.0},
-                .direction = vec_sum(lower_left_corner,
-                    vec_sum(
-                        mult_num_vector(f32, u, horizontal),
-                        mult_num_vector(f32, v, vertical)))};
-            const col = color(r);
+                .direction = vec_sum(f32, lower_left_corner,
+                    vec_sum(f32,
+                        mult_num_vector(f32, f32, u, horizontal),
+                        mult_num_vector(f32, f32, v, vertical)))};
+            const col = color(f32, r);
             const ir: u8 = @intFromFloat(255.99*col[0]);
             const ig: u8 = @intFromFloat(255.99*col[1]);
             const ib: u8 = @intFromFloat(255.99*col[2]);
