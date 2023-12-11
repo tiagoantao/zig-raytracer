@@ -34,8 +34,8 @@ pub fn mult_num_vector(comptime T: type, comptime V: type, a: T , b: Vector3D(V)
 }
 
 
-pub fn point_at_parameter(comptime T: type, r: Ray(T), t: T) Vector3D(T) {
-    return r.origin + t * r.direction;
+pub fn point_at_parameter(comptime T: type, comptime V: type, r: Ray(T), t: V) Vector3D(T) {
+    return vec_sum(T, r.origin, mult_num_vector(V, T, t, r.direction));
 }
 
 
@@ -53,29 +53,35 @@ pub fn color_blue(comptime T: type, r: Ray(T)) Vector3D(T) {
 }
 
 
-pub fn hit_sphere(comptime T: type, center: Vector3D(T), radius: f32, r: Ray(T)) bool {
+pub fn hit_sphere(comptime T: type, center: Vector3D(T), radius: f32, r: Ray(T)) f32 {
     const oc = vec_sub(T, r.origin, center);
     const a = vec_dot(T, r.direction, r.direction);
     const b = 2.0 * vec_dot(T, oc, r.direction);
     const c = vec_dot(T, oc, oc) - radius * radius;
     const discriminant = b * b - 4.0 * a * c;
-    return discriminant > 0.0;
+    if (discriminant < 0.0) {
+        return -1.0;
+    } else {
+        return (-b - @sqrt(discriminant)) / (2.0 * a);
+    }
 }
 
 // color for sphere
 pub fn color(comptime T: type, r: Ray(T)) Vector3D(T) {
-    if (hit_sphere(T, .{0.0, 0.0, -1.0}, 0.5, r)) {
-        return .{1.0, 0.0, 0.0};
+    const t: f32 = hit_sphere(T, .{0.0, 0.0, -1.0}, 0.5, r);
+    if (t > 0.0) {
+        const N = vec_sub(T, point_at_parameter(T, f32, r, t), .{0.0, 0.0, -1.0});
+        return mult_num_vector(f32, T, 0.5, .{N[0] + 1.0, N[1] + 1.0, N[2] + 1.0});
     }
     const norm = @sqrt(pow(f32, r.direction[0], 2) + pow(f32, r.direction[1], 2) + pow(f32, r.direction[2], 2));
     const unit_direction: Vector3D(T) = .{
         r.direction[0] / norm,
         r.direction[1] / norm,
         r.direction[2] / norm};
-    const t = 0.5 * (unit_direction[1] + 1.0);
+    const t2 = 0.5 * (unit_direction[1] + 1.0);
     return vec_sum(T,
-        mult_num_vector(f32, T, (1.0 - t), .{1.0, 1.0, 1.0}),
-        mult_num_vector(f32, T, t, .{0.5, 0.7, 1.0}));
+        mult_num_vector(f32, T, (1.0 - t2), .{1.0, 1.0, 1.0}),
+        mult_num_vector(f32, T, t2, .{0.5, 0.7, 1.0}));
 }
 
 
