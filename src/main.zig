@@ -66,8 +66,8 @@ pub fn hit_sphere(comptime T: type, center: Vector3D(T), radius: f32, r: Ray(T))
     }
 }
 
-// color for sphere
-pub fn color(comptime T: type, r: Ray(T)) Vector3D(T) {
+
+pub fn color_sphere(comptime T: type, r: Ray(T)) Vector3D(T) {
     const t: f32 = hit_sphere(T, .{0.0, 0.0, -1.0}, 0.5, r);
     if (t > 0.0) {
         const N = vec_sub(T, point_at_parameter(T, f32, r, t), .{0.0, 0.0, -1.0});
@@ -82,6 +82,18 @@ pub fn color(comptime T: type, r: Ray(T)) Vector3D(T) {
     return vec_sum(T,
         mult_num_vector(f32, T, (1.0 - t2), .{1.0, 1.0, 1.0}),
         mult_num_vector(f32, T, t2, .{0.5, 0.7, 1.0}));
+}
+
+
+pub fn RayFn(comptime T: type) type {
+    return fn(T: type, Ray(T)) Vector3D(T);
+}
+
+
+pub fn color_objects(comptime T: type, objects: [] const RayFn(T), r: Ray(T)) ?Vector3D(T) {
+    _ = r;
+    _ = objects;
+    return .{0.0, 0.0, 0.0};
 }
 
 
@@ -129,22 +141,23 @@ pub fn generate_gradient_image(allocator: Allocator, width: u16, height: u16) ![
 }
 
 
-pub fn generate_blue_gradient(allocator: Allocator, width: u16, height: u16) ![][][3] u8 {
+pub fn generate_from_function(comptime T: type, allocator: Allocator, color_fun: RayFn(T), width: u16, height: u16) ![][][3] u8 {
     var image: [][][3] u8 = try allocate_image(allocator, width, height);
     const lower_left_corner = .{-2.0, -1.0, -1.0};
     const horizontal = .{4.0, 0.0, 0.0};
     const vertical = .{0.0, 2.0, 0.0};
     for (0..height) |j| {
         for (0..width) |i| {
-            const u: f32 = @as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(width));
-            const v: f32 = @as(f32, @floatFromInt(j)) / @as(f32, @floatFromInt(height));
-            const r = Ray(f32) {
+            const u: f32 = @as(T, @floatFromInt(i)) / @as(T, @floatFromInt(width));
+            const v: f32 = @as(T, @floatFromInt(j)) / @as(T, @floatFromInt(height));
+            const r = Ray(T) {
                 .origin = .{0.0, 0.0, 0.0},
-                .direction = vec_sum(f32, lower_left_corner,
+                .direction = vec_sum(T, lower_left_corner,
                     vec_sum(f32,
-                        mult_num_vector(f32, f32, u, horizontal),
-                        mult_num_vector(f32, f32, v, vertical)))};
-            const col = color(f32, r);
+                        mult_num_vector(T, T, u, horizontal),
+                        mult_num_vector(T, T, v, vertical)))};
+            //const col = color_sphere(T, r);
+            const col = color_fun(T, r);
             const ir: u8 = @intFromFloat(255.99*col[0]);
             const ig: u8 = @intFromFloat(255.99*col[1]);
             const ib: u8 = @intFromFloat(255.99*col[2]);
@@ -154,8 +167,9 @@ pub fn generate_blue_gradient(allocator: Allocator, width: u16, height: u16) ![]
     return image;
 }
 
+
 pub fn main() !void {
     //const image = try generate_gradient_image(std.heap.page_allocator, 640, 480);
-    const image = try generate_blue_gradient(std.heap.page_allocator, 640, 480);
+    const image = try generate_from_function(f32, std.heap.page_allocator, color_sphere, 640, 480);
     try write_pnm("out.pnm", image);
 }
