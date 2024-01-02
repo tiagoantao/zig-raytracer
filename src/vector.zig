@@ -3,8 +3,8 @@ const Allocator = std.mem.Allocator;
 const pow = std.math.pow;
 
 
-pub fn Vector3D(comptime T: type) type {
-    const Vector = struct {
+pub fn Vector(comptime T: type) type {
+    return struct {
         x: T,
         y: T,
         z: T,
@@ -29,5 +29,4 @@ pub fn Vector3D(comptime T: type) type {
             return @This(){.x = a * b.x, .y = a * b.y, .z = a * b.z};
         }
     };
-    return Vector;
 }
