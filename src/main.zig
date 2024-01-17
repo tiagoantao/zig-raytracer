@@ -94,7 +94,7 @@ pub fn generate_from_ray(comptime T: type, allocator: Allocator, comptime color_
             const ir: u8 = @intFromFloat(255.99 * col.x);
             const ig: u8 = @intFromFloat(255.99 * col.y);
             const ib: u8 = @intFromFloat(255.99 * col.z);
-            image[j][i] = .{ ir, ig, ib };
+            image[height - (j + 1)][i] = .{ ir, ig, ib };
         }
     }
     return image;
