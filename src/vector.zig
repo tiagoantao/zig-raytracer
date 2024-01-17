@@ -28,5 +28,13 @@ pub fn Vector(comptime T: type) type {
         pub fn mult_num(comptime V:type, a: V, b: @This()) @This() {
             return @This(){.x = a * b.x, .y = a * b.y, .z = a * b.z};
         }
+
+        pub fn length(a: @This()) T {
+            return pow(T, a.x, 2) + pow(T, a.y, 2) + pow(T, a.z, 2);
+        }
+
+        pub fn unit_vector(a: @This()) @This() {
+            return @This(){.x = a.x / a.length(), .y = a.y / a.length(), .z = a.z / a.length()};
+        }
     };
 }
