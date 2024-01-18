@@ -6,10 +6,12 @@ const Vector = @import("vector.zig").Vector;
 const ray = @import("ray.zig");
 const img = @import("image.zig");
 const hit = @import("hit.zig");
+const Camera = @import("camera.zig").Camera;
 
 const Vec = Vector(f32);
 const Ray = ray.Ray(f32);
 const max_f32_float: f32 = std.math.floatMax(f32);
+
 
 // color for Blue gradient
 pub fn color_blue(comptime T: type, r: Ray) Vec {
@@ -32,6 +34,7 @@ pub fn hit_sphere(center: Vec, radius: f32, r: Ray) f32 {
         return (-b - @sqrt(discriminant)) / (2.0 * a);
     }
 }
+
 
 pub fn color_sphere(r: Ray) Vec {
     const t: f32 = hit_sphere(Vec.init(0.0, 0.0, -1.0), 0.5, r);
@@ -81,16 +84,24 @@ pub fn RayFn() type {
 
 pub fn generate_from_ray(comptime T: type, allocator: Allocator, comptime color_fun: RayFn(), world: hit.Object, width: u16, height: u16) ![][][3]u8 {
     var image: [][][3]u8 = try img.allocate_image(allocator, width, height);
+    const origin = Vec.init(0.0, 0.0, 0.0);
     const lower_left_corner = Vec.init(-2.0, -1.0, -1.0);
     const horizontal = Vec.init(4.0, 0.0, 0.0);
     const vertical = Vec.init(0.0, 2.0, 0.0);
+    const camera = Camera(T).init(origin, lower_left_corner, horizontal, vertical);
+    const reps: f32 = 100;
+    var rng = std.rand.DefaultPrng.init(0);  // Should not be 0 - deterministic
     for (0..height) |j| {
         for (0..width) |i| {
-            const u: f32 = @as(T, @floatFromInt(i)) / @as(T, @floatFromInt(width));
-            const v: f32 = @as(T, @floatFromInt(j)) / @as(T, @floatFromInt(height));
-            const r = Ray{ .origin = Vec.init(0.0, 0.0, 0.0), .direction = Vec.sum(lower_left_corner, Vec.sum(Vec.mult_num(T, u, horizontal), Vec.mult_num(T, v, vertical))) };
             //const col = color_sphere(T, r);
-            const col = color_fun(r, world);
+            var col: Vec = Vec.init(0.0, 0.0, 0.0);
+            for (0..reps) |_| {
+                const u: f32 = (@as(T, @floatFromInt(i)) + rng.random().float(T)) / @as(T, @floatFromInt(width));
+                const v: f32 = (@as(T, @floatFromInt(j)) + rng.random().float(T) ) / @as(T, @floatFromInt(height));
+                const r = camera.get_ray(u, v);
+                col = Vec.sum(col, color_fun(r, world));
+            }
+            col = Vec.div_num(f32, reps, col);
             const ir: u8 = @intFromFloat(255.99 * col.x);
             const ig: u8 = @intFromFloat(255.99 * col.y);
             const ib: u8 = @intFromFloat(255.99 * col.z);

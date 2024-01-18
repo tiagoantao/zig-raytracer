@@ -29,6 +29,11 @@ pub fn Vector(comptime T: type) type {
             return @This(){.x = a * b.x, .y = a * b.y, .z = a * b.z};
         }
 
+
+        pub fn div_num(comptime V:type, a: V, b: @This()) @This() {
+            return @This(){.x = b.x / a, .y =  b.y / a, .z = b.z / a};
+        }
+
         pub fn length(a: @This()) T {
             return pow(T, a.x, 2) + pow(T, a.y, 2) + pow(T, a.z, 2);
         }
