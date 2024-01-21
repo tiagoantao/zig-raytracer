@@ -1,6 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const pow = std.math.pow;
+const sqrt = std.math.sqrt;
 
 
 pub fn Vector(comptime T: type) type {
@@ -36,6 +37,10 @@ pub fn Vector(comptime T: type) type {
 
         pub fn length(a: @This()) T {
             return pow(T, a.x, 2) + pow(T, a.y, 2) + pow(T, a.z, 2);
+        }
+
+        pub fn length_squared(a: @This()) T {
+            return sqrt(pow(T, a.x, 2) + pow(T, a.y, 2) + pow(T, a.z, 2));
         }
 
         pub fn unit_vector(a: @This()) @This() {
